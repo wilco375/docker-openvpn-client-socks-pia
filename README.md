@@ -1,12 +1,10 @@
-# OpenVPN-client
+# OpenVPN-client for PIA
 
 This is a docker image of an OpenVPN client tied to a SOCKS proxy server.  It is
 useful to isolate network changes (so the host is not affected by the modified
 routing).
 
-This supports directory style (where the certificates are not bundled together in one `.ovpn` file) and those that contains `update-resolv-conf`
-
-(For the same thing in WireGuard, see [kizzx2/docker-wireguard-socks-proxy](https://github.com/kizzx2/docker-wireguard-socks-proxy))
+It is an altered version of [https://github.com/kizzx2/docker-openvpn-client-socks](https://github.com/kizzx2/docker-openvpn-client-socks) for easy use with Private Internet Access VPN. The UDP config with strong encryption is used.  
 
 ## Why?
 
@@ -14,20 +12,32 @@ This is arguably the easiest way to achieve "app based" routing. For example, yo
 
 ## Usage
 
-Preferably, using `start` in this repository:
-```bash
-start /your/openvpn/directory
-```
+Using docker compose:
 
-`/your/openvpn/directory` should contain *one* OpenVPN `.conf` file. It can reference other certificate files or key files in the same directory.
+```yaml
+version: "3.4"
+services:
+  pia-socks:
+    container_name: pia_socks
+    build: docker-openvpn-client-socks
+    restart: unless-stopped
 
-Alternatively, using `docker run` directly:
+    environment:
+      REGION: us_east
+      USERNAME: "<pia username>"
+      PASSWORD: "<pia password>"
+    ports:
+      - 1080:1080
+    networks:
+      - web
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
 
-```bash
-docker run -it --rm --device=/dev/net/tun --cap-add=NET_ADMIN \
-    --name openvpn-client \
-    --volume /your/openvpn/directory/:/etc/openvpn/:ro -p 1080:1080 \
-    kizzx2/openvpn-client-socks
+networks:
+  web:
+    external: true
 ```
 
 Then connect to SOCKS proxy through through `localhost:1080` / `local.docker:1080`. For example:
